@@ -1,0 +1,26 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl
+
+COPY services/auth-service/package*.json ./
+
+RUN npm install
+
+COPY services/auth-service/ .
+
+COPY Shared_dataBase/ ./Shared_dataBase/
+
+RUN mkdir -p /app/database
+
+
+EXPOSE 3001
+
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
+CMD ["node", "server.js"]

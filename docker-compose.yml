@@ -1,0 +1,25 @@
+services:
+  auth-service:
+    build:
+      context: .  
+      dockerfile: services/auth-service/Dockerfile
+    container_name: ft_transcendence_auth
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=transcendence-secret-key-change-in-production
+    volumes:
+      - ./database:/app/database
+      - ./Shared_dataBase:/Shared_dataBase  
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
+networks:
+  transcendence-network:
+    driver: bridge
+
+volumes:
+  database-data:
+    driver: local
