@@ -2,7 +2,7 @@ import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import bcrypt from "bcrypt";
 import Fastify from "fastify";
-import db from "./Shared_dataBase/database/db-connection.js";
+import db from "../../Shared_dataBase/database/db-connection.js"
 
 const app = Fastify({
   logger: true,
@@ -84,7 +84,7 @@ app.post("/login", async (request, reply) => {
 const start = async () => {
   try {
     await app.listen({ port: 3010, host: "0.0.0.0" });
-    console.log(" Auth Service running on port 3001");
+    console.log(" Auth Service running on port 3010");
     console.log(" Database: SQLite (shared)");
   } catch (err) {
     app.log.error(err);

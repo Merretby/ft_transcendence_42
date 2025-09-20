@@ -20,6 +20,6 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-EXPOSE 3001
+EXPOSE 3010
 
 CMD ["node", "server.js"]
