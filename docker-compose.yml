@@ -1,11 +1,10 @@
-version: '3.8'
-
 services:
   auth-service:
     build:
       context: .
       dockerfile: services/auth-service/Dockerfile
     container_name: ft_transcendence_auth
+    working_dir: /app/services/auth-service
     ports:
       - "3010:3010"
     environment:
@@ -13,10 +12,12 @@ services:
       - JWT_SECRET=transcendence-secret-key-change-in-production
     volumes:
       - ./database:/app/database:rw
-      - ./Shared_dataBase:/app/Shared_dataBase:rw
+      # Use the Shared_dataBase copied into the image to avoid host/native mismatches
+      # - ./Shared_dataBase:/app/Shared_dataBase:rw
     networks:
       - transcendence-network
     restart: unless-stopped
+    command: ["node", "dist/server.js"]
 networks:
   transcendence-network:
     driver: bridge
