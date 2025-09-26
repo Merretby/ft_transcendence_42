@@ -1,9 +1,10 @@
 FROM node:20-slim
 
-WORKDIR /app
+# Keep repo-like structure so relative imports work both in dev and prod
+WORKDIR /app/services/auth-service
 
+# System deps for native modules (bcrypt) and sqlite3
 RUN apt-get update && apt-get install -y \
-    curl \
     python3 \
     make \
     g++ \
@@ -11,17 +12,54 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install dependencies first (faster builds via layer caching)
 COPY services/auth-service/package*.json ./
-RUN npm install
+RUN npm ci --no-audit --no-fund
 
+# Allow modules inside /app/Shared_dataBase to resolve dependencies installed here
+ENV NODE_PATH=/app/services/auth-service/node_modules
+ENV PATH="$PATH:/app/services/auth-service/node_modules/.bin"
+
+# Copy service source and shared DB module
 COPY services/auth-service/ ./
-COPY Shared_dataBase/ ./Shared_dataBase/
+COPY Shared_dataBase/ /app/Shared_dataBase/
 
-RUN mkdir -p database && chmod 755 database
+# Provide a node_modules entry point for Shared_dataBase (module resolution walks upward, not sideways)
+RUN ln -s /app/services/auth-service/node_modules /app/Shared_dataBase/node_modules || true
+
+# Ensure database mount path exists
+RUN mkdir -p /app/database && chmod 755 /app/database
+
+# Build TypeScript -> dist
+RUN npm run build
+
+# Ensure bcrypt native binding matches the container OS/CPU
+RUN npm rebuild bcrypt --build-from-source
 
 EXPOSE 3010
 
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-#   CMD curl -f http://localhost:3010/test || exit 1
+CMD ["node", "dist/server.js"]
 
-CMD ["node", "server.js"]
+# --- If you want multiple build stages, split each stage into its own Dockerfile or separate with comments.
+# --- Only one CMD per stage is allowed. Below is a single-stage Dockerfile example.
+
+# FROM node:20-slim
+# WORKDIR /app/services/auth-service
+# RUN apt-get update && apt-get install -y \
+#     python3 \
+#     make \
+#     g++ \
+#     sqlite3 \
+#     libsqlite3-dev \
+#     && rm -rf /var/lib/apt/lists/*
+# COPY services/auth-service/package*.json ./
+# RUN npm ci --no-audit --no-fund
+# COPY services/auth-service/ ./
+# COPY Shared_dataBase/ /app/Shared_dataBase/
+# RUN mkdir -p /app/database && chmod 755 /app/database
+# RUN npm run build
+# RUN npm rebuild bcrypt --build-from-source
+# EXPOSE 3010
+# CMD ["node", "dist/server.js"]
+
+# --- Remove all duplicate FROM/CMD blocks from this file, or split into separate Dockerfiles as needed.
